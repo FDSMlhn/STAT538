@@ -29,19 +29,22 @@ def KPCA(X, kernel= RBF, n_components=2,iteration = 500, **kwargs):
     C = np.dot(norm_matrix, np.dot(GRAM, norm_matrix))/(len(X)-1)
     C_copy = C.copy()
     
-    eigen_vectors = []
-    eigen_values = []
+    # eigen_vectors = []
+    # eigen_values = []
+    first_n_components = []
     for i in range(n_components):
         v = np.random.randn(len(C))[:,np.newaxis]
         for i in range(iteration):
             temp_v = np.dot(C, v)
             v = temp_v / np.linalg.norm(temp_v)
             lam = np.dot(np.dot(v.T, C), v)
-        eigen_vectors.append(v)
-        eigen_values.append(lam)
+        # eigen_vectors.append(v)
+        # eigen_values.append(lam)
+        first_n_components.append(np.dot(C, 1/np.sqrt(v)*lam))
         if i!=n_components-1:
             C -= eigen_value* v * v.T
-    return C_copy, eigen_vectors, eigen_values
+    return np.concatenate(first_n_components,axis=1)
+#    return C_copy, eigen_vectors, eigen_values
 
 # MLP
 
