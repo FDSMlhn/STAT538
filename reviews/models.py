@@ -18,17 +18,25 @@ def power_iter(X, iteration=500):
         lam = np.dot(np.dot(v.T, C), v)
     return v, lam
 
-def KPCA(X, kernel= RBF, n_components=2,iteration = 500, **kwargs):
+def KPCA(X, kernel= RBF, n_components=2,iteration = 500, sigma=0):
     N = len(X)
-    GRAM = np.zeros((N,N))
-    for i in range(N):
-        for j in range(N):
-            GRAM[i,j] = kernel(X[i],X[j], **kwargs)
+#     GRAM = np.zeros((N,N))
+#     for i in range(N):
+#         for j in range(N):
+#             GRAM[i,j] = kernel(X[i],X[j], **kwargs)
     
-    norm_matrix = np.identity(N) - 1/len(X) * np.ones((len(X),len(X)))
-    C = np.dot(norm_matrix, np.dot(GRAM, norm_matrix))/(len(X)-1)
+    
+    X_norm = (X*X).sum(axis=1)
+    norm_mat = X_norm[:,np.newaxis] + X_norm[np.newaxis,:]
+    norm_mat -= 2 * np.dot(X,  X.T)
+    GRAM = np.exp(-norm_mat/(2*sigma))
+    print(GRAM)
+    
+    #norm_matrix = np.identity(N) - 1/len(X) * np.ones((len(X),len(X)))
+    #C = np.dot(norm_matrix, np.dot(GRAM, norm_matrix))/(len(X)-1)
+    C=GRAM
     C_copy = C.copy()
-    
+    print("Finished computing kernel matrix")
     # eigen_vectors = []
     # eigen_values = []
     first_n_components = []
@@ -40,9 +48,9 @@ def KPCA(X, kernel= RBF, n_components=2,iteration = 500, **kwargs):
             lam = np.dot(np.dot(v.T, C), v)
         # eigen_vectors.append(v)
         # eigen_values.append(lam)
-        first_n_components.append(np.dot(C, 1/np.sqrt(v)*lam))
+        first_n_components.append(np.dot(C_copy, 1/np.sqrt(lam)*v))
         if i!=n_components-1:
-            C -= eigen_value* v * v.T
+            C -= lam* v * v.T
     return np.concatenate(first_n_components,axis=1)
 #    return C_copy, eigen_vectors, eigen_values
 
@@ -66,6 +74,20 @@ class MLP(nn.Module):
         return x1,x2,x3
         
 
+        
+class CNN(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+        self.layer1 = nn.Cov(input_dim, 1600)
+        self.layer2 = nn.Linear(1600, 1600)
+        self.layer3 = nn.Linear(1600, output_dim)
+    
+    def forward(self,x):
+        x1= F.relu(self.layer1(x), inplace = True)
+        x2= F.relu(self.layer2(x1), inplace = True)
+        x3= self.layer3(x2)
+        return x1,x2,x3
+    
 
     
     
