@@ -8,8 +8,6 @@ def RBF(x,y, sigma = 1):
     return np.exp(- np.linalg.norm(x-y)**2/(2*sigma))
 
 def power_iter(X, iteration=500):
-    C = np.dot(np.dot(X.T, np.identity(len(X)) - 1/len(X) * np.ones((len(X),len(X)))), X)/(len(X)-1)
-
     v = np.random.randn(len(C))[:,np.newaxis]
     
     for i in range(iteration):
@@ -61,30 +59,48 @@ import torch.nn as nn
 import torch.nn.functional as F
     
 class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim,hu=1600):
         super().__init__()
-        self.layer1 = nn.Linear(input_dim, 1600)
-        self.layer2 = nn.Linear(1600, 1600)
-        self.layer3 = nn.Linear(1600, output_dim)
+        self.layer1 = nn.Linear(input_dim, hu)
+        self.layer2 = nn.Linear(hu, hu)
+        self.layer3 = nn.Linear(hu, output_dim)
     
     def forward(self,x):
         x1= F.relu(self.layer1(x), inplace = True)
         x2= F.relu(self.layer2(x1), inplace = True)
         x3= self.layer3(x2)
         return x1,x2,x3
-        
+
+    
+    
+class MLP2(nn.Module):
+    def __init__(self, input_dim, output_dim,hu=1600):
+        super().__init__()
+        self.layer1 = nn.Linear(input_dim, hu)
+        self.layer2 = nn.Linear(hu, hu)
+        self.layer3 = nn.Linear(hu, output_dim)
+    
+    def forward(self,x):
+        x1= F.sigmoid(self.layer1(x))
+        x2= F.sigmoid(self.layer2(x1))
+        x3= self.layer3(x2)
+        return x1,x2,x3
 
         
 class CNN(nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim=10):
         super().__init__()
-        self.layer1 = nn.Cov(input_dim, 1600)
-        self.layer2 = nn.Linear(1600, 1600)
-        self.layer3 = nn.Linear(1600, output_dim)
+        self.layer1 = nn.Conv2d(input_dim, 100,kernel_size=5, padding=2, stride=1)
+        self.pooling1= nn.MaxPool2d(kernel_size=3, stride=2,padding =1)
+        
+        self.layer2 = nn.Conv2d(100, 100,kernel_size=5, padding=2, stride=1)
+        self.pooling2= nn.MaxPool2d(kernel_size=3, stride=2,padding =1)
+        
+        self.layer3 = nn.Conv2d(100, output_dim, kernel_size=7, padding=0)
     
     def forward(self,x):
-        x1= F.relu(self.layer1(x), inplace = True)
-        x2= F.relu(self.layer2(x1), inplace = True)
+        x1= self.pooling1(F.relu(self.layer1(x), inplace = True))
+        x2= self.pooling2(F.relu(self.layer2(x1), inplace = True))
         x3= self.layer3(x2)
         return x1,x2,x3
     
